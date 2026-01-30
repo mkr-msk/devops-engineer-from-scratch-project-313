@@ -7,8 +7,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --frozen
 
 COPY . .
+RUN chmod +x /app/start.sh
+
 
 ENV PORT=8080
 
-CMD uv run alembic upgrade head
-CMD uv run gunicorn --bind 0.0.0.0:${PORT} --workers 2 main:app
+CMD ["/app/start.sh"] 
