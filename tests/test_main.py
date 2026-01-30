@@ -1,17 +1,283 @@
-import pytest
-
-from main import app
-
-
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
+import json
 
 
 def test_ping_endpoint(client):
-    response = client.get('/ping')
+  response = client.get('/ping')
+  assert response.status_code == 200
+  assert response.data == b'pong'
+
+
+def test_get_empty_links_list(client):
+  response = client.get('/api/links')
+  assert response.status_code == 200
+  data = response.get_json()
+  assert isinstance(data, list)
+  assert len(data) == 0
+
+
+def test_create_link(client):
+  response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/very-long-url',
+      'short_name': 'example'
+    }),
+    content_type='application/json'
+  )
+
+  assert response.status_code == 201
+  data = response.get_json()
+  assert 'id' in data
+  assert 'id' in data
+  assert data['original_url'] == 'https://example.com/very-long-url'
+  assert data['short_name'] == 'example'
+  assert data['short_url'] == 'http://testserver/example'
+  assert 'created_at' in data
+
+
+def test_create_link_with_invalid_url(client):
+  response = client.post(
+        '/api/links',
+        data=json.dumps({
+            'original_url': 'not-a-valid-url',
+            'short_name': 'test'
+        }),
+        content_type='application/json'
+    )
     
-    assert response.status_code == 200
-    assert response.data == b'pong'
+  assert response.status_code == 400
+  data = response.get_json()
+  assert 'error' in data
+
+
+def test_create_link_with_invalid_short_name(client):
+  response = client.post(
+        '/api/links',
+        data=json.dumps({
+            'original_url': 'https://example.com',
+            'short_name': 'invalid/name'
+        }),
+        content_type='application/json'
+    )
+    
+  assert response.status_code == 400
+  data = response.get_json()
+  assert 'error' in data
+
+
+def test_create_duplicate_short_name(client):
+  client.post(
+    '/api/links',
+    data=json.dumps({
+        'original_url': 'https://example.com/first',
+        'short_name': 'duplicate'
+    }),
+    content_type='application/json'
+  )
+  # duplicate
+  response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/second',
+      'short_name': 'duplicate'
+    }),
+    content_type='application/json'
+  )
+  assert response.status_code == 409
+  data = response.get_json()
+  assert 'error' in data
+  assert data['error'] == 'Conflict'
+
+
+def test_get_links_list(client):
+  links_data = [
+    {'original_url': 'https://example.com/1', 'short_name': 'link1'},
+    {'original_url': 'https://example.com/2', 'short_name': 'link2'},
+    {'original_url': 'https://example.com/3', 'short_name': 'link3'},
+  ]
+
+  for link_data in links_data:
+    client.post(
+      '/api/links',
+      data=json.dumps(link_data),
+      content_type='application/json'
+    )
+
+  response = client.get('/api/links')
+  assert response.status_code == 200
+  data = response.get_json()
+  assert isinstance(data, list)
+  assert len(data) == 3
+  short_names = [link['short_name'] for link in data]
+  assert 'link1' in short_names
+  assert 'link2' in short_names
+  assert 'link3' in short_names
+
+
+def test_get_link_by_id(client):
+  create_response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/test',
+      'short_name': 'test'
+    }),
+    content_type='application/json'
+  )
+
+  created_link = create_response.get_json()
+  link_id = created_link['id']
+  response = client.get(f'/api/links/{link_id}')
+  assert response.status_code == 200
+  data = response.get_json()
+  assert data['id'] == link_id
+  assert data['short_name'] == 'test'
+  assert data['original_url'] == 'https://example.com/test'
+
+
+def test_get_nonexistent_link(client):
+  response = client.get('/api/links/99999')
+  assert response.status_code == 404
+  data = response.get_json()
+  assert 'error' in data
+  assert data['error'] == 'Not Found'
+
+
+def test_update_link(client):
+  create_response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/old',
+      'short_name': 'oldname'
+    }),
+    content_type='application/json'
+  )
+  created_link = create_response.get_json()
+  link_id = created_link['id']
+  # update
+  response = client.put(
+    f'/api/links/{link_id}',
+    data=json.dumps({
+      'original_url': 'https://example.com/new',
+      'short_name': 'newname'
+    }),
+    content_type='application/json'
+  )
+    
+  assert response.status_code == 200
+  data = response.get_json()
+  assert data['id'] == link_id
+  assert data['original_url'] == 'https://example.com/new'
+  assert data['short_name'] == 'newname'
+  assert data['short_url'] == 'http://testserver/newname'
+
+
+def test_update_link_partial(client):
+  create_response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/original',
+      'short_name': 'partial'
+    }),
+    content_type='application/json'
+  )
+  created_link = create_response.get_json()
+  link_id = created_link['id']
+  # update
+  response = client.put(
+    f'/api/links/{link_id}',
+    data=json.dumps({
+      'original_url': 'https://example.com/updated'
+    }),
+    content_type='application/json'
+  )
+  
+  assert response.status_code == 200
+  data = response.get_json()
+  assert data['original_url'] == 'https://example.com/updated'
+  assert data['short_name'] == 'partial'
+
+
+def test_update_nonexistent_link(client):
+  response = client.put(
+    '/api/links/99999',
+    data=json.dumps({
+      'original_url': 'https://example.com'
+    }),
+    content_type='application/json'
+  )
+  
+  assert response.status_code == 404
+
+
+def test_update_link_duplicate_short_name(client):
+  client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/first',
+      'short_name': 'first'
+    }),
+    content_type='application/json'
+  )
+  create_response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/second',
+      'short_name': 'second'
+    }),
+    content_type='application/json'
+  )
+  second_id = create_response.get_json()['id']
+  response = client.put(
+    f'/api/links/{second_id}',
+    data=json.dumps({
+      'short_name': 'first'
+    }),
+    content_type='application/json'
+  )
+  
+  assert response.status_code == 409
+
+
+def test_delete_link(client):
+  create_response = client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/delete',
+      'short_name': 'delete'
+    }),
+    content_type='application/json'
+  )
+
+  link_id = create_response.get_json()['id']
+  response = client.delete(f'/api/links/{link_id}')
+  assert response.status_code == 204
+  assert response.data == b''
+  get_response = client.get(f'/api/links/{link_id}')
+  assert get_response.status_code == 404
+
+
+def test_delete_nonexistent_link(client):
+  response = client.delete('/api/links/99999')
+  assert response.status_code == 404
+
+
+def test_redirect_to_original_url(client):
+  client.post(
+    '/api/links',
+    data=json.dumps({
+      'original_url': 'https://example.com/destination',
+      'short_name': 'redirect'
+    }),
+    content_type='application/json'
+  )
+
+  response = client.get('/redirect', follow_redirects=False)
+  assert response.status_code == 301
+  assert response.location == 'https://example.com/destination'
+
+
+def test_redirect_nonexistent_short_name(client):
+  response = client.get('/nonexistent')
+  assert response.status_code == 404
+  data = response.get_json()
+  assert 'error' in data

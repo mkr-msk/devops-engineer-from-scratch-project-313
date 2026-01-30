@@ -9,4 +9,7 @@ lint:
 
 check: lint test
 
-.PHONY: run test lint check
+migrate:
+	uv run alembic upgrade head
+
+.PHONY: run test lint check migrate

@@ -11,3 +11,5 @@ Dockerfile
 README.md
 Makefile
 ruff.toml
+.env
+docker-compose.yml
