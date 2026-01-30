@@ -1,0 +1,13 @@
+__pycache__
+.venv/
+tests/
+.pytest_cache/
+.git/
+.gitignore
+.vscode/
+Dockerfile
+.dockerignore
+.github/
+README.md
+Makefile
+ruff.toml
