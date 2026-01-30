@@ -1,11 +1,27 @@
+import os
+
+import sentry_sdk
 from flask import Flask, jsonify
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 app = Flask(__name__)
 
+# SENTRY
+sentry_dsn = os.getenv('SENTRY_DSN')
+if sentry_dsn:
+  sentry_sdk.init(
+    dsn=sentry_dsn,
+    integrations=[FlaskIntegration()],
+    traces_sample_rate=1.0,
+    environment="production",
+  )
+
+# HEALTH CHECK
 @app.route('/ping')
 def ping():
   return 'pong'
 
+# ERRORS
 @app.errorhandler(404)
 def not_found(error):
   return jsonify({
