@@ -19,6 +19,7 @@ if sentry_dsn:
 # HEALTH CHECK
 @app.route('/ping')
 def ping():
+  1/0
   return 'pong'
 
 # ERRORS
