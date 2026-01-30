@@ -9,4 +9,5 @@ Dockerfile
 .dockerignore
 .github/
 README.md
+Makefile
 ruff.toml
