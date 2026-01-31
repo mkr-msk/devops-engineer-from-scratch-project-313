@@ -12,4 +12,7 @@ check: lint test
 migrate:
 	uv run alembic upgrade head
 
-.PHONY: run test lint check migrate
+dev:
+	npm run dev
+
+.PHONY: run test lint check migrate dev

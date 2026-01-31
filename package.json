@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "start:frontend": "npx start-hexlet-devops-deploy-crud-frontend",
+    "start:backend": "DEBUG=true uv run python main.py",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "dependencies": {
+    "@hexlet/project-devops-deploy-crud-frontend": "^1.0.4"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
