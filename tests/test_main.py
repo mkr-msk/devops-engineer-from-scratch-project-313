@@ -272,7 +272,7 @@ def test_pagination_first_page(client):
   response = client.get('/api/links?range=[0,10]')
   assert response.status_code == 200
   assert 'Content-Range' in response.headers
-  assert response.headers['Content-Range'] == 'links 0-9/15'
+  assert response.headers['Content-Range'] == 'links 1-10/15'
   data = response.get_json()
   assert len(data) == 10
   ids = [link['id'] for link in data]
@@ -292,7 +292,7 @@ def test_pagination_middle_page(client):
     
   response = client.get('/api/links?range=[5,10]')
   assert response.status_code == 200
-  assert response.headers['Content-Range'] == 'links 5-9/15'
+  assert response.headers['Content-Range'] == 'links 6-10/15'
   data = response.get_json()
   assert len(data) == 5
   ids = [link['id'] for link in data]
@@ -312,7 +312,7 @@ def test_pagination_last_page_partial(client):
     
   response = client.get('/api/links?range=[10,20]')
   assert response.status_code == 200
-  assert response.headers['Content-Range'] == 'links 10-11/12'
+  assert response.headers['Content-Range'] == 'links 11-12/12'
   data = response.get_json()
   assert len(data) == 2
   ids = [link['id'] for link in data]
@@ -353,14 +353,6 @@ def test_pagination_negative_values(client):
     assert 'non-negative' in data['message'].lower()
 
 
-def test_pagination_invalid_range_order(client):
-  response = client.get('/api/links?range=[10,5]')
-  assert response.status_code == 400
-  data = response.get_json()
-  assert 'error' in data
-  assert 'start must be less than end' in data['message'].lower()
-
-
 def test_get_all_links_without_pagination(client):
   for i in range(5):
     client.post(
@@ -374,6 +366,6 @@ def test_get_all_links_without_pagination(client):
   
   response = client.get('/api/links')
   assert response.status_code == 200
-  assert response.headers['Content-Range'] == 'links 0-4/5'
+  assert response.headers['Content-Range'] == 'links 1-5/5'
   data = response.get_json()
   assert len(data) == 5

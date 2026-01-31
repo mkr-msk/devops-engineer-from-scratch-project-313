@@ -70,14 +70,15 @@ def get_links():
             'message': 'Range values must be non-negative'
           }), 400
         
-        if start >= end:
+        if start > end:
           return jsonify({
             'error': 'Bad Request',
             'message': 'Range start must be less than end'
           }), 400
         
+        offset = start
         limit = end - start
-        statement = statement.offset(start).limit(limit)
+        statement = statement.offset(offset).limit(limit)
         links = session.exec(statement).all()
         actual_end = start + len(links)
 
@@ -86,7 +87,7 @@ def get_links():
         ]))
 
         if len(links) > 0:
-          response.headers['Content-Range'] = f'links {start}-{actual_end-1}/{total_count}'  # noqa: E501
+          response.headers['Content-Range'] = f'links {start+1}-{actual_end}/{total_count}'  # noqa: E501
         else:
           response.headers['Content-Range'] = f'links */{total_count}'
 
@@ -102,7 +103,7 @@ def get_links():
     response = make_response(jsonify([format_link_response(link) for link in links]))
 
     if total_count > 0:
-      response.headers['Content-Range'] = f'links 0-{total_count-1}/{total_count}'
+      response.headers['Content-Range'] = f'links 1-{total_count}/{total_count}'
     else:
       response.headers['Content-Range'] = f'links */{total_count}'
 
