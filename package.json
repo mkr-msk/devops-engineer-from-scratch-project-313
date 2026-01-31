@@ -1,4 +1,7 @@
 {
+  "name": "hexlet-code",
+  "version": "1.0.0",
+  "description": "URL shortener service - DevOps project",
   "scripts": {
     "start:frontend": "npx start-hexlet-devops-deploy-crud-frontend",
     "start:backend": "DEBUG=true uv run python main.py",
