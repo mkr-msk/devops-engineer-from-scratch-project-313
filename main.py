@@ -77,7 +77,7 @@ def get_links():
           }), 400
         
         offset = start
-        limit = end - start
+        limit = end - start + 1
         statement = statement.offset(offset).limit(limit)
         links = session.exec(statement).all()
         actual_end = start + len(links)
