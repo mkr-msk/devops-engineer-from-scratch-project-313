@@ -2,10 +2,10 @@ import os
 
 import sentry_sdk
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, jsonify, make_response, redirect, request
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from database import engine
 from models import Link
@@ -47,9 +47,58 @@ def ping():
 @app.route('/api/links', methods=['GET'])
 def get_links():
   with Session(engine) as session:
+    range_param = request.args.get('range')
     statement = select(Link)
+    total_count = session.exec(select(func.count()).select_from(Link)).one()
+
+    if range_param:
+      try:
+        range_str = range_param.strip('[]').replace(' ', '')
+        start, end = map(int, range_str.split(','))
+
+        if start < 0 or end < 0:
+          return jsonify({
+            'error': 'Bad Request',
+            'message': 'Range values must be non-negative'
+          }), 400
+        
+        if start >= end:
+          return jsonify({
+            'error': 'Bad Request',
+            'message': 'Range start must be less than end'
+          }), 400
+        
+        limit = end - start
+        statement = statement.offset(start).limit(limit)
+        links = session.exec(statement).all()
+        actual_end = start + len(links)
+
+        response = make_response(jsonify([
+          format_link_response(link) for link in links
+        ]))
+
+        if len(links) > 0:
+          response.headers['Content-Range'] = f'links {start}-{actual_end-1}/{total_count}'  # noqa: E501
+        else:
+          response.headers['Content-Range'] = f'links */{total_count}'
+
+        return response, 200
+      
+      except (ValueError, AttributeError):
+        return jsonify({
+          'error': 'Bad Request',
+          'message': f'Invalid range format. Expected [start,end], got: {range_param}'
+        }), 400
+ 
     links = session.exec(statement).all()
-    return jsonify([format_link_response(link) for link in links]), 200
+    response = make_response(jsonify([format_link_response(link) for link in links]))
+
+    if total_count > 0:
+      response.headers['Content-Range'] = f'links 0-{total_count-1}/{total_count}'
+    else:
+      response.headers['Content-Range'] = f'links */{total_count}'
+
+    return response, 200
 
 
 @app.route('/api/links', methods=['POST'])

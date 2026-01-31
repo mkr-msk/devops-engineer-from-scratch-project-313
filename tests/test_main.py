@@ -89,31 +89,6 @@ def test_create_duplicate_short_name(client):
   assert data['error'] == 'Conflict'
 
 
-def test_get_links_list(client):
-  links_data = [
-    {'original_url': 'https://example.com/1', 'short_name': 'link1'},
-    {'original_url': 'https://example.com/2', 'short_name': 'link2'},
-    {'original_url': 'https://example.com/3', 'short_name': 'link3'},
-  ]
-
-  for link_data in links_data:
-    client.post(
-      '/api/links',
-      data=json.dumps(link_data),
-      content_type='application/json'
-    )
-
-  response = client.get('/api/links')
-  assert response.status_code == 200
-  data = response.get_json()
-  assert isinstance(data, list)
-  assert len(data) == 3
-  short_names = [link['short_name'] for link in data]
-  assert 'link1' in short_names
-  assert 'link2' in short_names
-  assert 'link3' in short_names
-
-
 def test_get_link_by_id(client):
   create_response = client.post(
     '/api/links',
@@ -281,3 +256,124 @@ def test_redirect_nonexistent_short_name(client):
   assert response.status_code == 404
   data = response.get_json()
   assert 'error' in data
+
+
+def test_pagination_first_page(client):
+  for i in range(15):
+    client.post(
+      '/api/links',
+      data=json.dumps({
+        'original_url': f'https://example.com/{i}',
+        'short_name': f'link{i}'
+      }),
+      content_type='application/json'
+    )
+    
+  response = client.get('/api/links?range=[0,10]')
+  assert response.status_code == 200
+  assert 'Content-Range' in response.headers
+  assert response.headers['Content-Range'] == 'links 0-9/15'
+  data = response.get_json()
+  assert len(data) == 10
+  ids = [link['id'] for link in data]
+  assert ids == list(range(1, 11))
+
+
+def test_pagination_middle_page(client):
+  for i in range(15):
+    client.post(
+      '/api/links',
+      data=json.dumps({
+        'original_url': f'https://example.com/{i}',
+        'short_name': f'link{i}'
+      }),
+      content_type='application/json'
+    )
+    
+  response = client.get('/api/links?range=[5,10]')
+  assert response.status_code == 200
+  assert response.headers['Content-Range'] == 'links 5-9/15'
+  data = response.get_json()
+  assert len(data) == 5
+  ids = [link['id'] for link in data]
+  assert ids == list(range(6, 11))
+
+
+def test_pagination_last_page_partial(client):
+  for i in range(12):
+    client.post(
+      '/api/links',
+      data=json.dumps({
+        'original_url': f'https://example.com/{i}',
+        'short_name': f'link{i}'
+      }),
+      content_type='application/json'
+    )
+    
+  response = client.get('/api/links?range=[10,20]')
+  assert response.status_code == 200
+  assert response.headers['Content-Range'] == 'links 10-11/12'
+  data = response.get_json()
+  assert len(data) == 2
+  ids = [link['id'] for link in data]
+  assert ids == [11, 12]
+
+
+def test_pagination_out_of_range(client):
+  for i in range(5):
+    client.post(
+      '/api/links',
+      data=json.dumps({
+          'original_url': f'https://example.com/{i}',
+          'short_name': f'link{i}'
+      }),
+      content_type='application/json'
+    )
+  
+  response = client.get('/api/links?range=[100,110]')
+  assert response.status_code == 200
+  assert response.headers['Content-Range'] == 'links */5'
+  data = response.get_json()
+  assert len(data) == 0
+
+
+def test_pagination_invalid_format(client):
+  response = client.get('/api/links?range=invalid')
+  assert response.status_code == 400
+  data = response.get_json()
+  assert 'error' in data
+  assert data['error'] == 'Bad Request'
+
+
+def test_pagination_negative_values(client):
+    response = client.get('/api/links?range=[-5,10]')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert 'error' in data
+    assert 'non-negative' in data['message'].lower()
+
+
+def test_pagination_invalid_range_order(client):
+  response = client.get('/api/links?range=[10,5]')
+  assert response.status_code == 400
+  data = response.get_json()
+  assert 'error' in data
+  assert 'start must be less than end' in data['message'].lower()
+
+
+def test_get_all_links_without_pagination(client):
+  for i in range(5):
+    client.post(
+      '/api/links',
+      data=json.dumps({
+          'original_url': f'https://example.com/{i}',
+          'short_name': f'link{i}'
+      }),
+      content_type='application/json'
+    )
+  
+  response = client.get('/api/links')
+  assert response.status_code == 200
+  assert response.headers['Content-Range'] == 'links 0-4/5'
+  data = response.get_json()
+  assert len(data) == 5
