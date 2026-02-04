@@ -14,4 +14,10 @@ if DATABASE_URL.startswith('postgres://'):
 elif DATABASE_URL.startswith('postgresql://'):
   DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
 
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    connect_args={
+        "prepare_threshold": None,
+    }
+)
