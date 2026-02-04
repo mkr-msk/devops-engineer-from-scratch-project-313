@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import sentry_sdk
 from dotenv import load_dotenv
@@ -14,6 +15,13 @@ from schemas import LinkCreate, LinkUpdate
 
 load_dotenv()
 BASE_URL = os.getenv('BASE_URL')
+
+# Run database migrations on startup
+try:
+  subprocess.run(['alembic', 'upgrade', 'head'], check=True, capture_output=True)
+  print('Database migrations applied successfully')
+except subprocess.CalledProcessError as e:
+  print(f'Warning: Migration failed: {e.stderr.decode()}')
 
 app = Flask(__name__)
 
