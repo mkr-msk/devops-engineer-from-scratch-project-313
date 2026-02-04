@@ -48,7 +48,7 @@ def format_link_response(link: Link) -> dict:
     'id': link.id,
     'original_url': link.original_url,
     'short_name': link.short_name,
-    'short_url': f'{BASE_URL}/{link.short_name}',
+    'short_url': f'{BASE_URL}/r/{link.short_name}',
     'created_at': link.created_at.isoformat()
   }
 
@@ -74,14 +74,12 @@ def get_links():
 
         if start < 0 or end < 0:
           return jsonify({
-            'error': 'Bad Request',
-            'message': 'Range values must be non-negative'
+            'detail': 'Range values must be non-negative'
           }), 400
-        
+
         if start > end:
           return jsonify({
-            'error': 'Bad Request',
-            'message': 'Range start must be less than end'
+            'detail': 'Range start must be less than end'
           }), 400
         
         offset = start
@@ -103,8 +101,7 @@ def get_links():
       
       except (ValueError, AttributeError):
         return jsonify({
-          'error': 'Bad Request',
-          'message': f'Invalid range format. Expected [start,end], got: {range_param}'
+          'detail': f'Invalid range format. Expected [start,end], got: {range_param}'
         }), 400
  
     links = session.exec(statement).all()
@@ -135,21 +132,18 @@ def create_link():
     
   except IntegrityError:
     return jsonify({
-      'error': 'Conflict',
-      'message': f'Short name "{data.get('short_name')}" already exists'
+      'detail': f'Short name "{data.get('short_name')}" already exists'
     }), 409
-  
+
   except ValueError as e:
     return jsonify({
-      'error': 'Bad request',
-      'message': str(e)
-    }), 400
-  
+      'detail': str(e)
+    }), 422
+
   except Exception as e:
     app.logger.error(f'Error creating link: {e}', exc_info=True)
     return jsonify({
-      'error': 'Internal Server Error',
-      'message': 'An error occured while creating the link'
+      'detail': 'An error occured while creating the link'
     }), 500
 
 
@@ -160,8 +154,7 @@ def get_link(link_id: int):
 
     if not link:
       return jsonify({
-        'error': 'Not Found',
-        'message': f'Link with id {link_id} not fount'
+        'detail': f'Link with id {link_id} not found'
       }), 404
     
     return jsonify(format_link_response(link)), 200
@@ -178,8 +171,7 @@ def update_link(link_id: int):
 
       if not link:
         return jsonify({
-          'error': 'Not Found',
-          'message': f'Link with id {link_id} not fount'
+          'detail': f'Link with id {link_id} not found'
         }), 404
 
       update_dict = update_data.model_dump(exclude_unset=True, mode='json')
@@ -191,24 +183,21 @@ def update_link(link_id: int):
       session.refresh(link)
 
       return jsonify(format_link_response(link)), 200
-  
+
   except IntegrityError:
     return jsonify({
-      'error': 'Conflict',
-      'message': f'Short name "{data.get('short_name')}" already exists'
+      'detail': f'Short name "{data.get('short_name')}" already exists'
     }), 409
-  
-  except ValueError as e:
+
+  except (ValueError, TypeError) as e:
     return jsonify({
-      'error': 'Bad request',
-      'message': str(e)
-    }), 400
-  
+      'detail': str(e)
+    }), 422
+
   except Exception as e:
     app.logger.error(f'Error creating link: {e}', exc_info=True)
     return jsonify({
-      'error': 'Internal Server Error',
-      'message': 'An error occured while creating the link'
+      'detail': 'An error occured while creating the link'
     }), 500  
 
 
@@ -219,8 +208,7 @@ def delete_link(link_id: int):
 
     if not link:
       return jsonify({
-        'error': 'Not Found',
-        'message': f'Link with id {link_id} not fount'
+        'detail': f'Link with id {link_id} not found'
       }), 404
     
     session.delete(link)
@@ -230,7 +218,7 @@ def delete_link(link_id: int):
   
 
 # REDIRECT
-@app.route('/<short_name>')
+@app.route('/r/<short_name>')
 def redirect_to_original(short_name: str):
   with Session(engine) as session:
     statement = select(Link).where(Link.short_name == short_name)
@@ -238,10 +226,9 @@ def redirect_to_original(short_name: str):
 
     if not link:
       return jsonify({
-        'error': 'Not Found',
-        'message': f'Short link {short_name} not fount'
+        'detail': f'Short link {short_name} not found'
       }), 404
-    
+
   return redirect(link.original_url, code=301)
 
 
@@ -249,26 +236,23 @@ def redirect_to_original(short_name: str):
 @app.errorhandler(404)
 def not_found(error):
   return jsonify({
-    'error': 'Not Found',
-    'message': 'The requested URL was not found on the server.'
+    'detail': 'The requested URL was not found on the server.'
   }), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
   return jsonify({
-    'error': 'Internal Server Error',
-    'message': 'An unexpected error occurred.'
+    'detail': 'An unexpected error occurred.'
   }), 500
 
 
 @app.errorhandler(Exception)
 def handle_exception(error):
   app.logger.error(f'Unhandled exception: {error}', exc_info=True)
-  
+
   return jsonify({
-    'error': 'Internal Server Error',
-    'message': 'An unexpected error occurred.'
+    'detail': 'An unexpected error occurred.'
   }), 500
 
 

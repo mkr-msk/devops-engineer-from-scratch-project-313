@@ -31,7 +31,7 @@ def test_create_link(client):
   assert 'id' in data
   assert data['original_url'] == 'https://example.com/very-long-url'
   assert data['short_name'] == 'example'
-  assert data['short_url'] == 'http://testserver/example'
+  assert data['short_url'] == 'http://testserver/r/example'
   assert 'created_at' in data
 
 
@@ -44,10 +44,10 @@ def test_create_link_with_invalid_url(client):
         }),
         content_type='application/json'
     )
-    
-  assert response.status_code == 400
+
+  assert response.status_code == 422
   data = response.get_json()
-  assert 'error' in data
+  assert 'detail' in data
 
 
 def test_create_link_with_invalid_short_name(client):
@@ -59,10 +59,10 @@ def test_create_link_with_invalid_short_name(client):
         }),
         content_type='application/json'
     )
-    
-  assert response.status_code == 400
+
+  assert response.status_code == 422
   data = response.get_json()
-  assert 'error' in data
+  assert 'detail' in data
 
 
 def test_create_duplicate_short_name(client):
@@ -85,8 +85,7 @@ def test_create_duplicate_short_name(client):
   )
   assert response.status_code == 409
   data = response.get_json()
-  assert 'error' in data
-  assert data['error'] == 'Conflict'
+  assert 'detail' in data
 
 
 def test_get_link_by_id(client):
@@ -113,8 +112,7 @@ def test_get_nonexistent_link(client):
   response = client.get('/api/links/99999')
   assert response.status_code == 404
   data = response.get_json()
-  assert 'error' in data
-  assert data['error'] == 'Not Found'
+  assert 'detail' in data
 
 
 def test_update_link(client):
@@ -143,7 +141,7 @@ def test_update_link(client):
   assert data['id'] == link_id
   assert data['original_url'] == 'https://example.com/new'
   assert data['short_name'] == 'newname'
-  assert data['short_url'] == 'http://testserver/newname'
+  assert data['short_url'] == 'http://testserver/r/newname'
 
 
 def test_update_link_partial(client):
@@ -246,16 +244,16 @@ def test_redirect_to_original_url(client):
     content_type='application/json'
   )
 
-  response = client.get('/redirect', follow_redirects=False)
+  response = client.get('/r/redirect', follow_redirects=False)
   assert response.status_code == 301
   assert response.location == 'https://example.com/destination'
 
 
 def test_redirect_nonexistent_short_name(client):
-  response = client.get('/nonexistent')
+  response = client.get('/r/nonexistent')
   assert response.status_code == 404
   data = response.get_json()
-  assert 'error' in data
+  assert 'detail' in data
 
 
 def test_pagination_first_page(client):
@@ -341,16 +339,15 @@ def test_pagination_invalid_format(client):
   response = client.get('/api/links?range=invalid')
   assert response.status_code == 400
   data = response.get_json()
-  assert 'error' in data
-  assert data['error'] == 'Bad Request'
+  assert 'detail' in data
 
 
 def test_pagination_negative_values(client):
     response = client.get('/api/links?range=[-5,9]')
     assert response.status_code == 400
     data = response.get_json()
-    assert 'error' in data
-    assert 'non-negative' in data['message'].lower()
+    assert 'detail' in data
+    assert 'non-negative' in data['detail'].lower()
 
 
 def test_get_all_links_without_pagination(client):
