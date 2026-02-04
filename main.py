@@ -5,6 +5,7 @@ import sentry_sdk
 from dotenv import load_dotenv
 from flask import Flask, jsonify, make_response, redirect, request
 from flask_cors import CORS
+from pydantic import ValidationError
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
@@ -129,7 +130,12 @@ def create_link():
       session.refresh(new_link)
 
       return jsonify(format_link_response(new_link)), 201
-    
+
+  except ValidationError as e:
+    return jsonify({
+      'detail': e.errors()
+    }), 422
+
   except IntegrityError:
     return jsonify({
       'detail': f'Short name "{data.get('short_name')}" already exists'
@@ -184,12 +190,22 @@ def update_link(link_id: int):
 
       return jsonify(format_link_response(link)), 200
 
+  except ValidationError as e:
+    return jsonify({
+      'detail': e.errors()
+    }), 422
+
   except IntegrityError:
     return jsonify({
       'detail': f'Short name "{data.get('short_name')}" already exists'
     }), 409
 
-  except (ValueError, TypeError) as e:
+  except TypeError as e:
+    return jsonify({
+      'detail': [{'msg': str(e), 'type': 'type_error'}]
+    }), 422
+
+  except ValueError as e:
     return jsonify({
       'detail': str(e)
     }), 422
