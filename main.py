@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 
@@ -132,8 +133,14 @@ def create_link():
       return jsonify(format_link_response(new_link)), 201
 
   except ValidationError as e:
+    # Parse JSON string to ensure it's JSON-serializable
+    errors = json.loads(e.json())
+    # Add "body" prefix to loc array to match FastAPI format
+    for error in errors:
+      if 'loc' in error:
+        error['loc'] = ['body'] + list(error['loc'])
     return jsonify({
-      'detail': e.errors()
+      'detail': errors
     }), 422
 
   except IntegrityError:
@@ -191,8 +198,14 @@ def update_link(link_id: int):
       return jsonify(format_link_response(link)), 200
 
   except ValidationError as e:
+    # Parse JSON string to ensure it's JSON-serializable
+    errors = json.loads(e.json())
+    # Add "body" prefix to loc array to match FastAPI format
+    for error in errors:
+      if 'loc' in error:
+        error['loc'] = ['body'] + list(error['loc'])
     return jsonify({
-      'detail': e.errors()
+      'detail': errors
     }), 422
 
   except IntegrityError:
