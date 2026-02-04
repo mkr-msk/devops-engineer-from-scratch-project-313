@@ -32,7 +32,6 @@ COPY nginx.conf /etc/nginx/nginx.conf.template
 COPY start.sh ./
 RUN chmod +x /app/start.sh
 
-
 ENV PORT=80
 
 CMD ["/app/start.sh"] 
