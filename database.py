@@ -5,19 +5,19 @@ from sqlmodel import create_engine
 
 load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-  raise ValueError('DATABASE_URL is not set')
+    raise ValueError("DATABASE_URL is not set")
 
-if DATABASE_URL.startswith('postgres://'):
-  DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
-elif DATABASE_URL.startswith('postgresql://'):
-  DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 engine = create_engine(
     DATABASE_URL,
     echo=False,
     connect_args={
         "prepare_threshold": None,
-    }
+    },
 )
