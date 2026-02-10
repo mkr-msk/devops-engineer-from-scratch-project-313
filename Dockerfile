@@ -22,7 +22,7 @@ RUN npm ci --omit=dev
 RUN mkdir -p /app/public && \
     cp -r ./node_modules/@hexlet/project-devops-deploy-crud-frontend/dist/. /app/public/
 
-COPY main.py database.py models.py schemas.py ./
+COPY app ./app
 
 COPY alembic.ini ./
 COPY alembic ./alembic

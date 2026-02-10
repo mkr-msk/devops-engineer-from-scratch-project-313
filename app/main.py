@@ -11,9 +11,9 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
-from database import engine
-from models import Link
-from schemas import LinkCreate, LinkUpdate
+from app.database import engine
+from app.models import Link
+from app.schemas import LinkCreate, LinkUpdate
 
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
@@ -92,7 +92,7 @@ def get_links():
 
                 if len(links) > 0:
                     response.headers["Content-Range"] = (
-                        f"links {start + 1}-{actual_end}/{total_count}"  # noqa: E501
+                        f"links {start + 1}-{actual_end}/{total_count}"
                     )
                 else:
                     response.headers["Content-Range"] = f"links */{total_count}"

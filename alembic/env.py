@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
 from alembic import context
-from models import Link  # noqa: F401
+from app.models import Link  # noqa: F401
 
 load_dotenv()
 
