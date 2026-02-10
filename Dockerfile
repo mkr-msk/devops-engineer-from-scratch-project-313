@@ -23,6 +23,7 @@ RUN mkdir -p /app/public && \
     cp -r ./node_modules/@hexlet/project-devops-deploy-crud-frontend/dist/. /app/public/
 
 COPY app ./app
+COPY main.py ./
 
 COPY alembic.ini ./
 COPY alembic ./alembic

@@ -3,8 +3,8 @@ from sqlmodel import Session, SQLModel, create_engine, delete
 from sqlmodel.pool import StaticPool
 
 import app.database as database
-import app.main as main
-from app.main import app as flask_app
+import main
+from main import app as flask_app
 from app.models import Link
 
 

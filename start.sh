@@ -7,4 +7,4 @@ uv run alembic upgrade head
 
 nginx
 
-exec uv run gunicorn --bind 127.0.0.1:8080 --workers 2 app.main:app
+exec uv run gunicorn --bind 127.0.0.1:8080 --workers 2 main:app
