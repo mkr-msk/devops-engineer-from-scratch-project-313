@@ -4,8 +4,8 @@ from sqlmodel.pool import StaticPool
 
 import app.database as database
 import main
-from main import app as flask_app
 from app.models import Link
+from main import app as flask_app
 
 
 # TEST DB
