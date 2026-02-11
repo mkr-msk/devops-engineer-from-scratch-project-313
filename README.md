@@ -18,6 +18,21 @@ To run the application, execute:
 make run
 ```
 
+### Building Docker Image
+
+Before building the Docker image, you need to build the frontend locally:
+
+```bash
+# Install frontend dependencies
+npm ci
+
+# Build frontend (copy from node_modules to public/)
+mkdir -p public && cp -r ./node_modules/@hexlet/project-devops-deploy-crud-frontend/dist/. ./public/
+
+# Now you can build the Docker image
+docker build -t app .
+```
+
 ## API Usage Examples
 
 ### Health Check
