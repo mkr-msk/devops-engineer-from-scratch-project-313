@@ -3,7 +3,7 @@ from sqlmodel import Session, SQLModel, create_engine, delete
 from sqlmodel.pool import StaticPool
 
 import app.database as database
-import main
+import app.routes as routes
 from app.models import Link
 from main import app as flask_app
 
@@ -33,8 +33,7 @@ def client(test_engine, monkeypatch):
         session.commit()
 
     monkeypatch.setattr(database, "engine", test_engine)
-    monkeypatch.setattr(main, "engine", test_engine)
-    monkeypatch.setattr(main, "BASE_URL", "http://testserver")
+    monkeypatch.setattr(routes, "BASE_URL", "http://testserver")
 
     flask_app.config["TESTING"] = True
 
