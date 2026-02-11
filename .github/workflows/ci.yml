@@ -24,4 +24,5 @@ jobs:
             restore-keys: ${{ runner.os }}-uv-
 
         - run: uv sync
+        - run: cp .env.example .env
         - run: make check
